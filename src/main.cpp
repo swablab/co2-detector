@@ -2,8 +2,6 @@
 #include <MQ135.h>
 #include <dht.h>
 
-#define RZERO 1
-
 #define PIN_MQ135 A0
 #define PIN_DHT11 A1
 
