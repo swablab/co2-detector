@@ -5,14 +5,28 @@
 #define PIN_MQ135 A0
 #define PIN_DHT11 A1
 
+#define PIN_LED_GREEN DD2
+#define PIN_LED_YELLOW DD3
+#define PIN_LED_RED DD4
+#define PIN_NOISE DD5
+
 MQ135 co2_sensor = MQ135(PIN_MQ135);
 dht dht_sensor;
+int count = 0;
+float ppm = -1;
+bool noise = false;
 
 void setup() {
   Serial.begin(9600);
+  pinMode(PIN_MQ135, INPUT);
+  pinMode(PIN_DHT11, INPUT);
+  pinMode(PIN_LED_GREEN, OUTPUT);
+  pinMode(PIN_LED_YELLOW, OUTPUT);
+  pinMode(PIN_LED_RED, OUTPUT);
+  pinMode(PIN_NOISE, OUTPUT);
 }
 
-void loop() {
+float measure() {
   Serial.print(RZERO);
   Serial.println("---------------------------");
   Serial.print("DHT:\t");
@@ -57,6 +71,35 @@ void loop() {
   float ppm = co2_sensor.getCorrectedPPM(dht_sensor.temperature, dht_sensor.humidity);
   Serial.print ("ppm: ");
   Serial.println (ppm);
+  return ppm;
+}
 
-  delay(2000);
+void loop() {
+  if (count >= 5 || ppm < 0) {
+    ppm = measure();
+    count = 0;
+  }
+
+  if (ppm < 1000) {
+    digitalWrite(PIN_LED_GREEN, 1);
+    digitalWrite(PIN_LED_YELLOW, 0);
+    digitalWrite(PIN_LED_RED, 0);
+    digitalWrite(PIN_NOISE, 0);
+  }
+  else if (ppm <= 2000) {
+    digitalWrite(PIN_LED_GREEN, 0);
+    digitalWrite(PIN_LED_YELLOW, 1);
+    digitalWrite(PIN_LED_RED, 0);
+    digitalWrite(PIN_NOISE, 0);
+  }
+  else {
+    digitalWrite(PIN_LED_GREEN, 0);
+    digitalWrite(PIN_LED_YELLOW, 0);
+    digitalWrite(PIN_LED_RED, 1);
+    noise = !noise;
+    digitalWrite(PIN_NOISE, noise);
+  }
+
+  delay(100);
+  count++;
 }
