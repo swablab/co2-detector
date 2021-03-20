@@ -10,8 +10,12 @@
 #define PIN_LED_RED DD4
 #define PIN_NOISE DD5
 
+#define MEASURE_DELAY 1000
+#define NOISE_DELAY 100
+
 MQ135 co2_sensor = MQ135(PIN_MQ135);
 dht dht_sensor;
+const int maxCount = MEASURE_DELAY / NOISE_DELAY;
 int count = 0;
 float ppm = -1;
 bool noise = false;
@@ -75,31 +79,34 @@ float measure() {
 }
 
 void loop() {
-  if (count >= 5 || ppm < 0) {
+  if (count >= maxCount || ppm < 0) {
     ppm = measure();
     count = 0;
+    if (ppm < 1000) {
+      digitalWrite(PIN_LED_GREEN, 1);
+      digitalWrite(PIN_LED_YELLOW, 0);
+      digitalWrite(PIN_LED_RED, 0);
+    }
+    else if (ppm <= 2000) {
+      digitalWrite(PIN_LED_GREEN, 0);
+      digitalWrite(PIN_LED_YELLOW, 1);
+      digitalWrite(PIN_LED_RED, 0);
+    }
+    else {
+      digitalWrite(PIN_LED_GREEN, 0);
+      digitalWrite(PIN_LED_YELLOW, 0);
+      digitalWrite(PIN_LED_RED, 1);
+    }
   }
 
-  if (ppm < 1000) {
-    digitalWrite(PIN_LED_GREEN, 1);
-    digitalWrite(PIN_LED_YELLOW, 0);
-    digitalWrite(PIN_LED_RED, 0);
-    digitalWrite(PIN_NOISE, 0);
-  }
-  else if (ppm <= 2000) {
-    digitalWrite(PIN_LED_GREEN, 0);
-    digitalWrite(PIN_LED_YELLOW, 1);
-    digitalWrite(PIN_LED_RED, 0);
-    digitalWrite(PIN_NOISE, 0);
-  }
-  else {
-    digitalWrite(PIN_LED_GREEN, 0);
-    digitalWrite(PIN_LED_YELLOW, 0);
-    digitalWrite(PIN_LED_RED, 1);
+  if (ppm > 2000) {
     noise = !noise;
     digitalWrite(PIN_NOISE, noise);
   }
+  else {
+    digitalWrite(PIN_NOISE, 0);
+  }
 
-  delay(100);
+  delay(NOISE_DELAY);
   count++;
 }
