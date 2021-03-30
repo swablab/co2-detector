@@ -35,15 +35,14 @@ void setup() {
   }
 }
 
-void printValues();
+void printValues(float ppm, float temp, float humidity);
 
 void loop() {
   if (count >= maxCount || count < 0) {
-    ppm = co2_sensor.getPPM();
-    Serial.print ("ppm: ");
-    Serial.println (ppm);
-    Serial.print ("rzero: ");
-    Serial.println (co2_sensor.getRZero());
+    float temp = bme.readTemperature();
+    float humidity = bme.readHumidity();
+    ppm = co2_sensor.getCorrectedPPM(temp, humidity);
+    
     count = 0;
     if (ppm < 1000) {
       digitalWrite(PIN_LED_GREEN, 1);
@@ -61,7 +60,7 @@ void loop() {
       digitalWrite(PIN_LED_RED, 1);
     }
 
-    // printValues();
+    printValues(ppm, temp, humidity);
   }
 
   if (ppm > 2000) {
@@ -76,23 +75,20 @@ void loop() {
   count++;
 }
 
-void printValues() {
+void printValues(float ppm, float temp, float humidity) {
   Serial.print("Temperature = ");
-  Serial.print(bme.readTemperature());
+  Serial.print(temp);
   Serial.println(" *C");
 
-  Serial.print("Pressure = ");
-
-  Serial.print(bme.readPressure() / 100.0F);
-  Serial.println(" hPa");
-
-  Serial.print("Approx. Altitude = ");
-  Serial.print(bme.readAltitude(SEALEVELPRESSURE_HPA));
-  Serial.println(" m");
-
   Serial.print("Humidity = ");
-  Serial.print(bme.readHumidity());
+  Serial.print(humidity);
   Serial.println(" %");
+
+  Serial.print ("ppm = ");
+  Serial.println (ppm);
+
+  Serial.print ("rzero = ");
+  Serial.println (co2_sensor.getCorrectedRZero(temp, humidity));
 
   Serial.println();
 }
