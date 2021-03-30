@@ -1,10 +1,9 @@
 #include <Arduino.h>
 #include <MQ135.h>
-#include <dht.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BME280.h>
 
 #define PIN_MQ135 A0
-#define PIN_DHT11 A1
-
 #define PIN_LED_GREEN DD2
 #define PIN_LED_YELLOW DD3
 #define PIN_LED_RED DD4
@@ -13,74 +12,38 @@
 #define MEASURE_DELAY 1000
 #define NOISE_DELAY 100
 
+#define SEALEVELPRESSURE_HPA (1013.25)
+
 MQ135 co2_sensor = MQ135(PIN_MQ135);
-dht dht_sensor;
+Adafruit_BME280 bme(10, 11, 12, 13);
 const int maxCount = MEASURE_DELAY / NOISE_DELAY;
-int count = 0;
-float ppm = -1;
+int count = -1;
+float ppm = 0;
 bool noise = false;
 
 void setup() {
-  Serial.begin(9600);
   pinMode(PIN_MQ135, INPUT);
-  pinMode(PIN_DHT11, INPUT);
   pinMode(PIN_LED_GREEN, OUTPUT);
   pinMode(PIN_LED_YELLOW, OUTPUT);
   pinMode(PIN_LED_RED, OUTPUT);
   pinMode(PIN_NOISE, OUTPUT);
-}
 
-float measure() {
-  Serial.print(RZERO);
-  Serial.println("---------------------------");
-  Serial.print("DHT:\t");
-  int chk = dht_sensor.read11(PIN_DHT11);
-  switch (chk)
-  {
-    case DHTLIB_OK:  
-      Serial.print("OK,\t"); 
-      break;
-    case DHTLIB_ERROR_CHECKSUM: 
-      Serial.print("Checksum error,\t"); 
-      break;
-    case DHTLIB_ERROR_TIMEOUT: 
-      Serial.print("Time out error,\t"); 
-      break;
-    case DHTLIB_ERROR_CONNECT:
-        Serial.print("Connect error,\t");
-        break;
-    case DHTLIB_ERROR_ACK_L:
-        Serial.print("Ack Low error,\t");
-        break;
-    case DHTLIB_ERROR_ACK_H:
-        Serial.print("Ack High error,\t");
-        break;
-    default: 
-      Serial.print("Unknown error,\t"); 
-      break;
+  Serial.begin(9600);
+
+  if (!bme.begin()) {
+    Serial.println(F("Could not find a valid BME280 sensor, check wiring!"));
   }
-  Serial.println();
-
-  Serial.print ("temperature: ");
-  Serial.println (dht_sensor.temperature);
-  Serial.print ("humidity: ");
-  Serial.println (dht_sensor.humidity);
-
-  float val = analogRead(A0);
-  Serial.print ("raw = ");
-  Serial.println (val);
-  float zero = co2_sensor.getCorrectedRZero(dht_sensor.temperature, dht_sensor.humidity);
-  Serial.print ("rzero: ");
-  Serial.println (zero);
-  float ppm = co2_sensor.getCorrectedPPM(dht_sensor.temperature, dht_sensor.humidity);
-  Serial.print ("ppm: ");
-  Serial.println (ppm);
-  return ppm;
 }
+
+void printValues();
 
 void loop() {
-  if (count >= maxCount || ppm < 0) {
-    ppm = measure();
+  if (count >= maxCount || count < 0) {
+    ppm = co2_sensor.getPPM();
+    Serial.print ("ppm: ");
+    Serial.println (ppm);
+    Serial.print ("rzero: ");
+    Serial.println (co2_sensor.getRZero());
     count = 0;
     if (ppm < 1000) {
       digitalWrite(PIN_LED_GREEN, 1);
@@ -97,6 +60,8 @@ void loop() {
       digitalWrite(PIN_LED_YELLOW, 0);
       digitalWrite(PIN_LED_RED, 1);
     }
+
+    // printValues();
   }
 
   if (ppm > 2000) {
@@ -109,4 +74,25 @@ void loop() {
 
   delay(NOISE_DELAY);
   count++;
+}
+
+void printValues() {
+  Serial.print("Temperature = ");
+  Serial.print(bme.readTemperature());
+  Serial.println(" *C");
+
+  Serial.print("Pressure = ");
+
+  Serial.print(bme.readPressure() / 100.0F);
+  Serial.println(" hPa");
+
+  Serial.print("Approx. Altitude = ");
+  Serial.print(bme.readAltitude(SEALEVELPRESSURE_HPA));
+  Serial.println(" m");
+
+  Serial.print("Humidity = ");
+  Serial.print(bme.readHumidity());
+  Serial.println(" %");
+
+  Serial.println();
 }
