@@ -12,14 +12,12 @@ double MQ135::getRS() {
 
 double MQ135::getVoltage() {
     int value = analogRead(_pin);
-    double voltage = (double)(value * VIn) / (double)(Resolution);
+    double voltage = (double)(value * VIn) / (double)(Resolution - 1);
     return voltage;
 }
 
 double MQ135::getPPM(float a, float b) {
     double ratio = getRS() / R0;
-    // double ppm_log = (log10(ratio) - b) / a;
-    // double ppm = pow(10, ppm_log);
     double ppm = a * pow(ratio, b);
     return ppm;
 }
@@ -33,7 +31,6 @@ double MQ135::getAlcohol() {
 }
 
 double MQ135::getCO2() {
-    // return getPPM(-0.3525, 0.7142) + ATMOCO2;
     return getPPM(110.47, -2.862) + ATMOCO2;
 }
 
