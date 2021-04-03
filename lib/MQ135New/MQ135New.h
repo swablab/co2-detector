@@ -9,23 +9,28 @@
 
 #define ATMOCO2 397.13
 
+const double VStep = (double)VIn / (Resolution - 1);
+
 class MQ135 {
  private:
   uint8_t _pin;
   float R0;
-  double getPPM(float a, float b);
 
  public:
   MQ135(uint8_t pin);
+  float getR0();
+  double getR0By(float ppm, float a, float b);
+  void setR0(float r0);
+  
+  double getVoltage();
+  double getResistance();
+  double getPPM(float a, float b);
+
   double getAcetona();
   double getAlcohol();
   double getCO();
   double getCO2();
   double getNH4();
   double getTolueno();
-  float getR0();
-  void setR0(float r0);
-  double getRS();
-  double getVoltage();
 };
 #endif

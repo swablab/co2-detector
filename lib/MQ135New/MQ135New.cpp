@@ -4,21 +4,25 @@ MQ135::MQ135(uint8_t pin) {
   _pin = pin;
 }
 
-double MQ135::getRS() {
-    double voltage = getVoltage();
-    double RS = (double)((double)(VIn * RL) / voltage) - RL;
-    return RS;
+double MQ135::getVoltage() {
+    return (double)analogRead(_pin) * VStep;
 }
 
-double MQ135::getVoltage() {
-    int value = analogRead(_pin);
-    double voltage = (double)(value * VIn) / (double)(Resolution - 1);
-    return voltage;
+double MQ135::getResistance() {
+    double voltage = getVoltage();
+    double rs = ((VIn * RL) / voltage) - RL;
+    if (rs < 0) {
+        rs = 0;
+    }
+    return rs;
 }
 
 double MQ135::getPPM(float a, float b) {
-    double ratio = getRS() / R0;
+    double ratio = getResistance() / R0;
     double ppm = a * pow(ratio, b);
+    if (ppm < 0) {
+        ppm = 0;
+    }
     return ppm;
 }
 
@@ -47,8 +51,13 @@ double MQ135::getTolueno() {
 }
 
 float MQ135::getR0() {
-    double r0 = getRS() / 3.6;
+    double r0 = getResistance() / 3.6;
     return r0;
+}
+
+double MQ135::getR0By(float ppm, float a, float b) {
+    double tmp = (log10(ppm / a) / b) - log10(RL);
+    return pow(10, tmp);
 }
 
 void MQ135::setR0(float r0) {
