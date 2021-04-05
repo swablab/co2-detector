@@ -36,7 +36,7 @@ class MQ135 {
   /// Get R0 in custom conditions for calibration purposes.
   /// Can be used, if you know the current CO2 Level.
   double getR0ByCO2Level(float ppm);
-  /// Set R0 Value foir calibration.
+  /// Set R0 Value for calibration.
   void setR0(float r0);
   
   /// Gets the resolved sensor voltage
