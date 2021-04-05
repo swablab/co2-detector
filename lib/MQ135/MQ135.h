@@ -1,56 +1,66 @@
-/**************************************************************************/
-/*!
-@file     MQ135.h
-@author   G.Krocker (Mad Frog Labs)
-@license  GNU GPLv3
+#ifndef MQ135New_H
+#define MQ135New_H
 
-First version of an Arduino Library for the MQ135 gas sensor
-TODO: Review the correction factor calculation. This currently relies on
-the datasheet but the information there seems to be wrong.
+#include "Arduino.h"
 
-@section  HISTORY
+/// Resistor on Sensor in kΩ
+#define RL 10
 
-v1.0 - First release
-*/
-/**************************************************************************/
-#ifndef MQ135_H
-#define MQ135_H
-#if ARDUINO >= 100
- #include "Arduino.h"
-#else
- #include "WProgram.h"
-#endif
+/// Voltage on Sensor in V
+#define VIn 5
 
-/// The load resistance on the board
-#define RLOAD 10.0
-/// Calibration resistance at atmospheric CO2 level
-// #define RZERO 76.63
-#define RZERO 840
-/// Parameters for calculating ppm of CO2 from sensor resistance
-#define PARA 116.6020682
-#define PARB 2.769034857
+/// Board analog Input Resolution
+/// Default: 2^10
+#define Resolution 1024
 
-/// Parameters to model temperature and humidity dependence
-#define CORA 0.00035
-#define CORB 0.02718
-#define CORC 1.39538
-#define CORD 0.0018
-
-/// Atmospheric CO2 level for calibration purposes
+/// CO2 Level in Atmosphere
 #define ATMOCO2 397.13
+
+/// Helper to calculate Voltage from Input
+/// Voltage = input * Vin / (Resolution - 1)
+const double VStep = (double)VIn / (Resolution - 1);
 
 class MQ135 {
  private:
-  uint8_t _pin;
+  /// input pin
+  uint8_t pin;
+  /// calibration Resistance
+  float R0;
 
  public:
+  /// Constructor with analog input Pin
   MQ135(uint8_t pin);
-  float getCorrectionFactor(float t, float h);
-  float getResistance();
-  float getCorrectedResistance(float t, float h);
-  float getPPM();
-  float getCorrectedPPM(float t, float h);
-  float getRZero();
-  float getCorrectedRZero(float t, float h);
+  /// Get R0 in default conditions for calibration purposes.
+  /// Assume CO2 Level is the default Atmospheric Level (~400ppm)
+  float getR0();
+  /// Get R0 in custom conditions for calibration purposes.
+  /// Can be used, if you know the current CO2 Level.
+  double getR0ByCO2Level(float ppm);
+  /// Set R0 Value foir calibration.
+  void setR0(float r0);
+  
+  /// Gets the resolved sensor voltage
+  double getVoltage();
+  /// Calculates the Resistance of the Sensor
+  double getResistance();
+  /// Calculates ppm on a exponential curve
+  /// (Different Gases have different curves)
+  double getPPM(float a, float b);
+  /// Calculates ppm on a linear curve
+  /// (Different Gases have different curves)
+  double getPPMLinear(float a, float b);
+
+  /// Gets ppm of Acetona in Air (C3H6O)
+  double getAcetona();
+  /// Gets ppm of Alcohol in Air
+  double getAlcohol();
+  /// Gets ppm of CO in Air
+  double getCO();
+  /// Gets ppm of CO2 in Air
+  double getCO2();
+  /// Gets ppm of NH4 in Air
+  double getNH4();
+  /// Gets ppm of Tolueno in Air (CH3)
+  double getTolueno();
 };
 #endif

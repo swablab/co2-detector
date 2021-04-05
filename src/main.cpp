@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "MQ135New.h"
+#include "MQ135.h"
 
 #define PIN_MQ135 A0
 #define PIN_LED_GREEN DD2
@@ -15,7 +15,7 @@ MQ135 co2_sensor(PIN_MQ135);
 void setup() {
   Serial.begin(9600);
   pinMode(PIN_MQ135, INPUT);
-  co2_sensor.setR0(66.0);
+  co2_sensor.setR0(1000.);
 }
 
 void printValues(float ppm, float temp, float humidity);
@@ -24,14 +24,6 @@ void loop() {
   float value = co2_sensor.getCO2();
   Serial.print("co2: ");
   Serial.println(value);
-  Serial.print("resistance: ");
-  Serial.println(co2_sensor.getResistance());
-  Serial.print("voltage: ");
-  Serial.println(co2_sensor.getVoltage());
-  Serial.print("r01: ");
-  Serial.println(co2_sensor.getR0());
-  Serial.print("r02: ");
-  Serial.println(co2_sensor.getR0By(1, 110.47, -2.862));
   delay(2000);
   // if (count >= maxCount || count < 0) {
   //   float temp = bme.readTemperature();

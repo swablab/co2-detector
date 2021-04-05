@@ -1,108 +1,83 @@
-/**************************************************************************/
-/*!
-@file     MQ135.cpp
-@author   G.Krocker (Mad Frog Labs)
-@license  GNU GPLv3
-First version of an Arduino Library for the MQ135 gas sensor
-TODO: Review the correction factor calculation. This currently relies on
-the datasheet but the information there seems to be wrong.
-@section  HISTORY
-v1.0 - First release
-*/
-/**************************************************************************/
-
 #include "MQ135.h"
 
-/**************************************************************************/
-/*!
-@brief  Default constructor
-@param[in] pin  The analog input pin for the readout of the sensor
-*/
-/**************************************************************************/
-
 MQ135::MQ135(uint8_t pin) {
-  _pin = pin;
+  this->pin = pin;
+  pinMode(pin, INPUT);
 }
 
-
-/**************************************************************************/
-/*!
-@brief  Get the correction factor to correct for temperature and humidity
-@param[in] t  The ambient air temperature
-@param[in] h  The relative humidity
-@return The calculated correction factor
-*/
-/**************************************************************************/
-float MQ135::getCorrectionFactor(float t, float h) {
-  return CORA * t * t - CORB * t + CORC - (h-33.)*CORD;
+double MQ135::getVoltage() {
+    return (double)analogRead(pin) * VStep;
 }
 
-/**************************************************************************/
-/*!
-@brief  Get the resistance of the sensor, ie. the measurement value
-@return The sensor resistance in kOhm
-*/
-/**************************************************************************/
-float MQ135::getResistance() {
-  int val = analogRead(_pin);
-  return ((1023./(float)val) * 5. - 1.)*RLOAD;
+double MQ135::getResistance() {
+    double voltage = getVoltage();
+    double rs = ((VIn * RL) / voltage) - RL;
+    if (rs < 0) {
+        rs = 0;
+    }
+    return rs;
 }
 
-/**************************************************************************/
-/*!
-@brief  Get the resistance of the sensor, ie. the measurement value corrected
-        for temp/hum
-@param[in] t  The ambient air temperature
-@param[in] h  The relative humidity
-@return The corrected sensor resistance kOhm
-*/
-/**************************************************************************/
-float MQ135::getCorrectedResistance(float t, float h) {
-  return getResistance()/getCorrectionFactor(t, h);
+double MQ135::getPPM(float a, float b) {
+    double ratio = getResistance() / R0;
+    double ppm = a * pow(ratio, b);
+    if (ppm < 0) {
+        ppm = 0;
+    }
+    return ppm;
 }
 
-/**************************************************************************/
-/*!
-@brief  Get the ppm of CO2 sensed (assuming only CO2 in the air)
-@return The ppm of CO2 in the air
-*/
-/**************************************************************************/
-float MQ135::getPPM() {
-  return PARA * pow((getResistance()/RZERO), -PARB);
+double MQ135::getPPMLinear(float a, float b) {
+    double ratio = getResistance() / R0;
+    double ppm_log = (log10(ratio) - b) / a;
+    double ppm = pow(10, ppm_log);
+    if (ppm < 0) {
+        ppm = 0;
+    }
+    return ppm;
 }
 
-/**************************************************************************/
-/*!
-@brief  Get the ppm of CO2 sensed (assuming only CO2 in the air), corrected
-        for temp/hum
-@param[in] t  The ambient air temperature
-@param[in] h  The relative humidity
-@return The ppm of CO2 in the air
-*/
-/**************************************************************************/
-float MQ135::getCorrectedPPM(float t, float h) {
-  return PARA * pow((getCorrectedResistance(t, h)/RZERO), -PARB);
+double MQ135::getAcetona() {
+    return getPPM(34.668, -3.369);
 }
 
-/**************************************************************************/
-/*!
-@brief  Get the resistance RZero of the sensor for calibration purposes
-@return The sensor resistance RZero in kOhm
-*/
-/**************************************************************************/
-float MQ135::getRZero() {
-  return getResistance() * pow((ATMOCO2/PARA), (1./PARB));
+double MQ135::getAlcohol() {
+    return getPPM(77.255, -3.18);
 }
 
-/**************************************************************************/
-/*!
-@brief  Get the corrected resistance RZero of the sensor for calibration
-        purposes
-@param[in] t  The ambient air temperature
-@param[in] h  The relative humidity
-@return The corrected sensor resistance RZero in kOhm
-*/
-/**************************************************************************/
-float MQ135::getCorrectedRZero(float t, float h) {
-  return getCorrectedResistance(t, h) * pow((ATMOCO2/PARA), (1./PARB));
+double MQ135::getCO2() {
+    // return getPPMLinear(-0.3525, 0.7142) + ATMOCO2;
+    return getPPM(110.47, -2.862) + ATMOCO2;
+}
+
+double MQ135::getCO() {
+    return getPPM(605.18, -3.937);
+}
+
+double MQ135::getNH4() {
+    return getPPM(102.2, -2.473);
+}
+
+double MQ135::getTolueno() {
+    return getPPM(44.947, -3.445);
+}
+
+float MQ135::getR0() {
+    double r0 = getResistance() / 3.6;
+    return r0;
+}
+
+double MQ135::getR0ByCO2Level(float ppm) {
+    if (ppm > ATMOCO2) {
+        ppm -= ATMOCO2;
+    }
+    else {
+        return NAN;
+    }
+    double tmp = -(log10(ppm / 110.47) / -2.862) + log10(getResistance());
+    return pow(10, tmp);
+}
+
+void MQ135::setR0(float r0) {
+    R0 = r0;
 }
