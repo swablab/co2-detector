@@ -16,7 +16,6 @@ Adafruit_BME280 bme;
 
 void setup() {
   Serial.begin(9600);
-  co2_sensor.setR0(300);
 
   // if (!bme.begin(0x76)) {
   //   Serial.println(F("Could not find a valid BME280 sensor, check wiring!"));
