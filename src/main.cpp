@@ -17,6 +17,7 @@ const int maxCount = 10;
 int count = 0;
 bool noise = false;
 bool noiseActive = false;
+bool loading = false;
 
 float ppm;
 
@@ -32,18 +33,68 @@ void setup() {
   pinMode(PIN_LED_RED2, OUTPUT);
   pinMode(PIN_NOISE, OUTPUT);
   Serial.begin(9600);
-  co2_sensor.setR0(300);
+  co2_sensor.setR0(130);
 
-  if (!bme.begin(0x76)) {
-    Serial.println(F("Could not find a valid BME280 sensor, check wiring!"));
-  }
+  // if (!bme.begin(0x76)) {
+  //   Serial.println(F("Could not find a valid BME280 sensor, check wiring!"));
+  // }
 }
 
 void loop() {
+  // if (loading) {
+  //   digitalWrite(PIN_LED_GREEN, 0);
+  //   digitalWrite(PIN_LED_GREEN2, 0);
+  //   digitalWrite(PIN_LED_YELLOW, 0);
+  //   digitalWrite(PIN_LED_YELLOW2, 0);
+  //   digitalWrite(PIN_LED_RED, 0);
+  //   digitalWrite(PIN_LED_RED2, 0);
+
+  //   switch (count)
+  //   {
+  //     case 1:
+  //       digitalWrite(PIN_LED_RED2, 1);
+  //       break;
+  //     case 2:
+  //       digitalWrite(PIN_LED_RED, 1);
+  //       digitalWrite(PIN_LED_RED2, 1);
+  //       break;
+  //     case 3:
+  //       digitalWrite(PIN_LED_RED, 1);
+  //       digitalWrite(PIN_LED_YELLOW2, 1);
+  //       break;
+  //     case 4:
+  //       digitalWrite(PIN_LED_YELLOW2, 1);
+  //       digitalWrite(PIN_LED_YELLOW, 1);
+  //       break;
+  //     case 5:
+  //       digitalWrite(PIN_LED_YELLOW, 1);
+  //       digitalWrite(PIN_LED_GREEN2, 1);
+  //       break;
+  //     case 6:
+  //       digitalWrite(PIN_LED_GREEN2, 1);
+  //       digitalWrite(PIN_LED_GREEN, 1);
+  //       break;
+  //     case 7:
+  //       digitalWrite(PIN_LED_GREEN, 1);
+  //       break;
+  //     case 10:
+  //       count = 0;
+  //       break;
+      
+  //     default:
+  //       break;
+  //   }
+
+  //   count++;
+  //   delay(200);
+  //   return;
+  // }
+
   if (count >= maxCount || count < 0) {
-    float temp = bme.readTemperature();
-    float humidity = bme.readHumidity();
-    ppm = co2_sensor.getCorrectedCO2(temp, humidity);
+    // float temp = bme.readTemperature();
+    // float humidity = bme.readHumidity();
+    // ppm = co2_sensor.getCorrectedCO2(temp, humidity);
+    ppm = co2_sensor.getCO2();
     
     count = 0;
     noiseActive = false;
@@ -54,24 +105,26 @@ void loop() {
     digitalWrite(PIN_LED_RED, 0);
     digitalWrite(PIN_LED_RED2, 0);
 
-    if (ppm < 1000) {
+    if (ppm < 900) {
       digitalWrite(PIN_LED_GREEN, 1);
-      if (ppm > 750) {
-        digitalWrite(PIN_LED_GREEN2, 1);
-      }
     }
-    if (ppm > 1000 && ppm <= 2000) {
+    if (ppm > 750 && ppm < 1100) {
+      digitalWrite(PIN_LED_GREEN2, 1);
+    }
+    if (ppm > 900 && ppm < 1900) {
       digitalWrite(PIN_LED_YELLOW, 1);
-      if (ppm > 1500) {
-        digitalWrite(PIN_LED_YELLOW2, 1);
-      }
     }
-    if (ppm > 2000) {
+    if (ppm > 1500 && ppm < 2200) {
+      digitalWrite(PIN_LED_YELLOW2, 1);
+    }
+    if (ppm > 2000 && ppm < 2800) {
       digitalWrite(PIN_LED_RED, 1);
-      if (ppm > 2500) {
-        noiseActive = true;
-        digitalWrite(PIN_LED_RED2, 1);
-      }
+    }
+    if (ppm > 2500) {
+      digitalWrite(PIN_LED_RED2, 1);
+    }
+    if (ppm > 3000) {
+      noiseActive = true;
     }
 
     printValues();
@@ -90,16 +143,16 @@ void loop() {
 }
 
 void printValues() {
-  float temp = bme.readTemperature();
-  float humidity = bme.readHumidity();
-  float ppm = co2_sensor.getCO2();
-  float cppm = co2_sensor.getCorrectedCO2(temp, humidity);
+  // float temp = bme.readTemperature();
+  // float humidity = bme.readHumidity();
+  // float ppm = co2_sensor.getCO2();
+  // float cppm = co2_sensor.getCorrectedCO2(temp, humidity);
   Serial.print("ppm: ");
   Serial.println(ppm);
-  Serial.print("Temperature: ");
-  Serial.println(temp);
-  Serial.print("Humidity: ");
-  Serial.println(humidity);
-  Serial.print("corrected ppm: ");
-  Serial.println(cppm);
+  // Serial.print("Temperature: ");
+  // Serial.println(temp);
+  // Serial.print("Humidity: ");
+  // Serial.println(humidity);
+  // Serial.print("corrected ppm: ");
+  // Serial.println(cppm);
 }
